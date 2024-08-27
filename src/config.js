@@ -19,7 +19,7 @@ const config = {
             debug: true, // Set to true to enable physics debugging
         },
     },
-    scene: [Specialist], 
+    scene: [Specialist, DoctorOfficeScene], 
 };
 
 export default config;

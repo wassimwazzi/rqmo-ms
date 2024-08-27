@@ -7,7 +7,6 @@ export default class Player {
 
         // Initialize player inventory (e.g., to store health cards and test requests)
         this.inventory = [];
-        console.log(scene.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),)
         // Create animations
         scene.anims.create({
             key: 'left',
@@ -31,7 +30,6 @@ export default class Player {
     }
 
     update(cursors) {
-        console.log()
         if (cursors.left.isDown) {
             this.sprite.setVelocityX(-160);
             this.sprite.anims.play('left', true);

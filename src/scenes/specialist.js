@@ -2,6 +2,7 @@ import Player from '../gameobjects/Player.js';
 import Doctor from '../gameobjects/Doctor.js';
 import background from '../assets/background.png';
 import button from '../assets/button.png';
+import ToggleButton from '../gameobjects/Button.js';
 // import healthcard from '../assets/healthcard.png';
 import dude from '../assets/dude.png';
 import doctor from '../assets/doctor.png';
@@ -17,48 +18,49 @@ export default class SpecialistScene extends Phaser.Scene {
         this.load.image('button', button);
         // this.load.image('healthcard', healthcard); 
         this.load.spritesheet('dude', dude, { frameWidth: 32, frameHeight: 48 });
-        this.load.spritesheet('doctor', doctor, { frameWidth: 32, frameHeight: 48 }); 
+        this.load.spritesheet('doctor', doctor, { frameWidth: 32, frameHeight: 48 });
     }
 
     create() {
-        
-        this.add.image(300, 150, 'background').setDisplaySize(600, 300); 
 
-        
-        this.player = new Player(this, 50, 250); 
+        this.add.image(300, 150, 'background').setDisplaySize(600, 300);
 
-        
-        this.doctor = new Doctor(this, 300, 250); 
 
-        
+        this.player = new Player(this, 50, 250);
+
+
+        this.doctor = new Doctor(this, 300, 250);
+
+
         this.physics.add.collider(this.player.sprite, this.doctor.sprite, this.doctor.startConversation.bind(this.doctor), null, this);
 
-        
+
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        
+
         this.dialogueText = this.add.text(30, 10, 'Welcome to the clinic!', {
             fontSize: '16px',
             fill: '#fff',
             wordWrap: { width: 540 },
         });
 
-        
+
         this.createActionButtons();
+        this.createToggleSceneButton();
         this.hideActionButtons();
 
-        
+
         this.score = 0;
         this.scoreText = this.add.text(500, 10, 'Score: 0', { fontSize: '16px', fill: '#fff' });
 
-        
+
         this.createDocumentation();
     }
 
     createActionButtons() {
         const actions = ['Physical Test', 'Blood Test', 'Refer Specialist', 'Refer Family Doctor', 'Social Support'];
-        const buttonYStart = 60; 
-        const buttonSpacing = 20; 
+        const buttonYStart = 60;
+        const buttonSpacing = 20;
 
         this.actionButtons = actions.map((action, index) => {
             const button = this.add.text(450, buttonYStart + index * buttonSpacing, action, {
@@ -75,6 +77,17 @@ export default class SpecialistScene extends Phaser.Scene {
 
             return button;
         });
+    }
+
+    createToggleSceneButton() {
+        this.switchButton = new ToggleButton(
+            this,
+            0,
+            50,
+            'Change Scene',
+            { fontSize: '20px', fill: '#ffffff', backgroundColor: '#000000', padding: { x: 10, y: 5 }, borderRadius: 5 },
+            () => this.scene.switch('DoctorOfficeScene') // callback function to switch scenes
+        );
     }
 
     hideActionButtons() {
@@ -118,8 +131,8 @@ export default class SpecialistScene extends Phaser.Scene {
                 break;
         }
         this.dialogueText.setText(dialogue);
-        this.player.showInventory(); 
-        this.hideActionButtons(); 
+        this.player.showInventory();
+        this.hideActionButtons();
     }
 
     createDocumentation() {
@@ -135,7 +148,7 @@ export default class SpecialistScene extends Phaser.Scene {
                 fill: '#fff',
                 wordWrap: { width: 280 },
             });
-            y += 40; 
+            y += 40;
         });
     }
 
