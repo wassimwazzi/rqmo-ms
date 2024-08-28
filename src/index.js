@@ -1,11 +1,4 @@
 import Phaser from 'phaser';
-import DoctorOfficeScene from './scenes/DoctorOfficeScene';
-
-const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    scene: DoctorOfficeScene
-};
+import config from './config.js';
 
 const game = new Phaser.Game(config);

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import doctorImage from '../assets/images/doctor.png';
 import patientImage from '../assets/images/patient.png';
 import officeImage from '../assets/images/office.png';
+import ToggleButton from '../gameobjects/Button.js';
 
 export default class DoctorOfficeScene extends Phaser.Scene {
     constructor() {
@@ -39,6 +40,18 @@ export default class DoctorOfficeScene extends Phaser.Scene {
 
         // Start the dialogue with the patient
         this.startDialogue();
+        this.createToggleSceneButton()
+    }
+
+    createToggleSceneButton() {
+        this.switchButton = new ToggleButton(
+            this,
+            0,
+            75,
+            'Change Scene',
+            { fontSize: '20px', fill: '#ffffff', backgroundColor: '#000000', padding: { x: 10, y: 5 }, borderRadius: 5 },
+            () => this.scene.switch('SpecialistScene') // callback function to switch scenes
+        );
     }
 
     startDialogue() {
