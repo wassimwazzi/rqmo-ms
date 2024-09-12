@@ -8,15 +8,18 @@ const config = {
     width: 600,
     height: 300,
     scale: {
-        mode: Phaser.Scale.FIT, 
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH, // Center the game in the window
+    },
+    dom: {
+        createContainer: true
     },
     autoRound: false, // No rounding for physics
     parent: 'game-container', // The DOM element to contain the game
     physics: {
         default: 'arcade', // Use the arcade physics engine
         arcade: {
-            gravity: { y: 0 }, 
+            gravity: { y: 0 },
             debug: true, // Set to true to enable physics debugging
         },
     },
