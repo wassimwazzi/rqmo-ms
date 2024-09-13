@@ -5,8 +5,8 @@ import Phaser from 'phaser';
 
 const config = {
     type: Phaser.AUTO, // Phaser will use WebGL if available, otherwise Canvas
-    width: 600,
-    height: 300,
+    width: 1500,
+    height: 800,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH, // Center the game in the window
