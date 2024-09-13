@@ -235,6 +235,7 @@ class ChatInput extends ChatItem {
     }
 }
 
+
 export class ChatBox extends ChatItem {
     constructor(scene, x, y, width, height) {
         super(scene, x, y, width, height)
