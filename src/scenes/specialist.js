@@ -1,5 +1,4 @@
-import Player from '../gameobjects/Player.js';
-import Doctor from '../gameobjects/Doctor.js';
+import { ChatBox } from '../gameobjects/Chat';
 import background from '../assets/background.png';
 import dude from '../assets/dude.png';
 import Phaser from 'phaser';
@@ -14,52 +13,24 @@ export default class SpecialistScene extends Phaser.Scene {
         this.load.image('background', background);
         this.load.spritesheet('dude', dude, { frameWidth: 32, frameHeight: 48 });
         this.load.spritesheet('doctor', doctor, { frameWidth: 32, frameHeight: 48 });
+        this.canvas = this.sys.game.canvas;
+        this.width = this.canvas.width
+        this.height = this.canvas.height
     }
 
     create() {
-        this.add.image(300, 150, 'background').setDisplaySize(600, 300);
-
-        this.player = new Player(this, 50, 250);
-        this.doctor = new Doctor(this, 300, 250);
-
-        this.physics.add.collider(this.player.sprite, this.doctor.sprite, this.doctor.startConversation.bind(this.doctor), null, this);
-
-        this.cursors = this.input.keyboard.createCursorKeys();
-
-        this.createChatBox();
-        this.createInputField();
-
-        // this.createToggleSceneButton();
+        this.add.image(this.width / 2, this.height / 2, 'background').setDisplaySize(this.width, this.height);
+        this.createChatBox()
     }
 
     createChatBox() {
-        this.chatBox = this.add.rectangle(300, 50, 500, 100, 0x000000).setOrigin(0.5).setAlpha(0.8);
-        this.chatText = this.add.text(280, 30, 'Doctor: What are your symptoms?', {
-            fontSize: '16px',
-            fill: '#fff',
-            wordWrap: { width: 460 },
-        }).setOrigin(0.5);
-    }
+        let rectHeight = this.height / 4;
+        let rectMargin = 0.1 * this.width;
+        // Align it to bottom of screen
+        this.chatBox = new ChatBox(this, rectMargin, this.height - rectHeight, this.width - 2 * rectMargin, rectHeight);
 
-    createInputField() {
-        // Create an input field
-        this.inputField = this.add.dom(300, 300, 'input', {
-            type: 'text',
-            name: 'symptoms',
-            placeholder: 'Enter your symptoms here...',
-            style: 'width: 400px; height: 30px; font-size: 16px;'
-        }).setOrigin(0.5);
+        this.chatBox.chatController.addMessage({ sender: 'Doctor', message: 'What are your symptoms?' });
 
-        // Create a submit button
-        this.submitButton = this.add.text(300, 140, 'Submit', {
-            fontSize: '16px',
-            fill: '#fff',
-            backgroundColor: '#000',
-            padding: { x: 10, y: 5 },
-            borderRadius: 5
-        }).setOrigin(0.5).setInteractive();
-
-        this.submitButton.on('pointerdown', () => this.handleSubmit());
     }
 
     handleSubmit() {
@@ -85,7 +56,5 @@ export default class SpecialistScene extends Phaser.Scene {
     }
 
     update() {
-        this.player.update(this.cursors);
-        this.doctor.update();
     }
 }
