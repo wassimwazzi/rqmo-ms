@@ -10,7 +10,7 @@ export default class SpecialistScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('background', background);
+        this.load.image('SpecialistBackground', background);
         this.load.spritesheet('dude', dude, { frameWidth: 32, frameHeight: 48 });
         this.load.spritesheet('doctor', doctor, { frameWidth: 32, frameHeight: 48 });
         this.canvas = this.sys.game.canvas;
@@ -19,7 +19,8 @@ export default class SpecialistScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.image(this.width / 2, this.height / 2, 'background').setDisplaySize(this.width, this.height);
+        console.log('added image', background)
+        this.add.image(this.width / 2, this.height / 2, 'SpecialistBackground').setDisplaySize(this.width, this.height);
         this.createChatBox()
     }
 

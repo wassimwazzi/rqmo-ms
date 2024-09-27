@@ -1,3 +1,4 @@
+import TitleScene from './scenes/TitleScene.js'
 import Specialist from './scenes/Specialist.js';
 import DoctorOfficeScene from './scenes/DoctorOfficeScene.js';
 import Phaser from 'phaser';
@@ -22,7 +23,7 @@ const config = {
             debug: true, // Set to true to enable physics debugging
         },
     },
-    scene: [Specialist, DoctorOfficeScene],
+    scene: [TitleScene, Specialist, DoctorOfficeScene], 
 };
 
 export default config;
