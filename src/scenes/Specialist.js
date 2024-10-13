@@ -1,4 +1,4 @@
-import { ChatBox } from '../gameobjects/Chat';
+import { ChatBox, ChatDropdownInput } from '../gameobjects/Chat';
 import background from '../assets/background.png';
 import dude from '../assets/dude.png';
 import Phaser from 'phaser';
@@ -28,7 +28,8 @@ export default class SpecialistScene extends Phaser.Scene {
         let rectHeight = this.height / 4;
         let rectMargin = 0.1 * this.width;
         // Align it to bottom of screen
-        this.chatBox = new ChatBox(this, rectMargin, this.height - rectHeight, this.width - 2 * rectMargin, rectHeight);
+        this.chatBox = new ChatBox(this, rectMargin, this.height - rectHeight, this.width - 2 * rectMargin, rectHeight, ChatDropdownInput);
+        this.chatBox.chatInput.setOptions(['Option 1', 'Option 2'])
 
         this.chatBox.chatController.addMessage({ sender: 'Doctor', message: 'What are your symptoms?' });
 

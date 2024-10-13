@@ -131,15 +131,14 @@ class ChatDisplay extends ChatItem {
     }
 }
 
-class ChatInput extends ChatItem {
-    constructor(scene, x, y, width, height, chatController, userName = 'Player') {
+export class ChatInput extends ChatItem {
+    constructor(scene, x, y, width, height, chatController, userName = 'Player', enabled = true) {
         super(scene, x, y, width, height);
         this.chatController = chatController;
         this.userName = userName;
-        this.initialMessage = 'Enter your message...';
         this.message = '';
-        this.inputFieldInFocus = false;
-        this.caretVisible = true;
+        this.inputFieldInFocus = enabled;
+        this.enabled = enabled
 
         // Set background color for the input area
         this.background.setFillStyle(0xffffff).setInteractive();
@@ -154,8 +153,6 @@ class ChatInput extends ChatItem {
         }).setOrigin(0.5, 0.5).setInteractive();
         this.container.add(this.submitButton);
 
-        this.submitButton.on('pointerdown', () => this.handleSubmit());
-
         // Set field focus if clicked inside box
         this.scene.input.on('pointerdown', (pointer) => {
             this.inputFieldInFocus = this.background.getBounds().contains(pointer.x, pointer.y);
@@ -169,7 +166,55 @@ class ChatInput extends ChatItem {
             }
         });
 
+        this.addSubmitListeners();
+    }
 
+    addSubmitListeners() {
+        this.submitButton.on('pointerdown', () => this.handleSubmit());
+        this.scene.input.keyboard.on('keydown', (event) => {
+            if (event.key === 'Enter') {
+                this.handleSubmit();
+            }
+        })
+    }
+
+    createInputField() {
+        // method to create the input field
+        throw { name: "NotImplementedError", message: "createInputField must be implemented by subclass" };
+    }
+
+    updateText() {
+        // method to update the displayed text in input
+        // called after submit
+        throw { name: "NotImplementedError", message: "updateText must be implemented by subclass" };
+        
+    }
+
+    toggleEnabled() {
+        this.enabled = !this.enabled
+    }
+
+    isEnabled() {
+        return this.enabled
+    }
+
+    // Handle submit button click
+    handleSubmit() {
+        if (!this.enabled) return;
+        const message = this.message.trim();
+        if (message) {
+            this.chatController.addMessage({ sender: this.userName, message });
+            this.message = '';  // Reset the message after sending
+            this.updateText();
+        }
+    }
+}
+
+export class ChattextInput extends ChatInput {
+    constructor(scene, x, y, width, height, chatController, userName = 'Player', enabled = true) {
+        super(scene, x, y, width, height, chatController, userName, enabled);
+        this.initialMessage = 'Enter your message...';
+        this.caretVisible = true;
         this.createInputField();
     }
 
@@ -186,9 +231,7 @@ class ChatInput extends ChatItem {
         this.scene.input.keyboard.on('keydown', (event) => {
             if (!this.inputFieldInFocus) return;
 
-            if (event.key === 'Enter') {
-                this.handleSubmit();
-            } else if (event.key === 'Backspace') {
+            if (event.key === 'Backspace') {
                 this.message = this.message.substring(0, this.message.length - 1);
                 this.updateText();
             } else if (event.key.length === 1) {  // Only handle single character keys
@@ -196,26 +239,7 @@ class ChatInput extends ChatItem {
                 this.updateText();
             }
         });
-        // this.createCaretBlinking();
     }
-
-    // NOTE: Turn this off when scene is changed?
-    // createCaretBlinking() {
-    //     this.caretVisible = this.inputFieldInFocus;
-    //     this.caretBlink = this.scene.time.addEvent({
-    //         delay: 500,  // Blink every 500ms
-    //         callback: () => {
-    //             if (this.inputFieldInFocus) {
-    //                 this.caretVisible = !this.caretVisible;
-    //                 this.updateText();
-    //             } else {
-    //                 this.caretVisible = false;
-    //                 this.updateText();
-    //             }
-    //         },
-    //         loop: true,
-    //     });
-    // }
 
     // Method to update the text and caret visibility
     updateText() {
@@ -223,27 +247,110 @@ class ChatInput extends ChatItem {
         // displayText = this.caretVisible ? displayText + '|' : displayText
         this.inputText.setText(displayText);
     }
+}
 
-    // Handle submit button click
+export class ChatDropdownInput extends ChatInput {
+    constructor(scene, x, y, width, height, chatController, userName = 'Player', enabled = false) {
+        super(scene, x, y, width, height, chatController, userName, enabled);
+        this.selectedOptionIndex = -1;
+        this.optionsVisible = false; // Track whether dropdown is open
+        this.initialMessage = 'Select an option';
+
+        // Dropdown options and container
+        this.dropdownText = scene.add.text(10, height / 2, `Select: ${this.initialMessage}`, {
+            fontSize: '16px',
+            fill: '#000000',
+            wordWrap: { width: width - 20 }
+        }).setOrigin(0, 0.5).setInteractive();
+        this.container.add(this.dropdownText);
+
+        this.optionsContainer = scene.add.container(10, 0);
+        this.container.add(this.optionsContainer);
+
+        this.scene.input.on('pointerdown', () => this.toggleDropdown());
+    }
+
+    toggleDropdown() {
+        console.log('toggleDropdown')
+        if (this.optionsVisible) {
+            this.hideDropdownOptions();
+        } else {
+            this.showDropdownOptions();
+        }
+    }
+
+    showDropdownOptions() {
+        console.log('showDropdownOptions', this.options)
+        if (!this.options || !this.options.length) return;
+
+        // Clear any existing options in case the dropdown is toggled multiple times
+        this.optionsContainer.removeAll(true);
+
+        const optionHeight = 30;  // Set the height for each option
+        this.options.forEach((option, index) => {
+            const optionText = this.scene.add.text(0, index * optionHeight, option, {
+                fontSize: '14px',
+                fill: '#000000',
+                backgroundColor: '#f0f0f0',
+                padding: { x: 5, y: 5 },
+                fixedWidth: this.width - 20 // Ensure the option fits within the dropdown width
+            }).setInteractive();
+
+            // Add click listener for selecting an option
+            optionText.on('pointerdown', () => {
+                this.selectedOptionIndex = index;
+                this.message = this.options[this.selectedOptionIndex];
+                this.updateText();
+                this.hideDropdownOptions();
+                this.enabled = true; // Enable input after selection
+            });
+
+            this.optionsContainer.add(optionText);
+        });
+
+        // Ensure the dropdown does not exceed the screen height
+        const dropdownHeight = optionHeight * this.options.length;
+        const maxDropdownHeight = this.scene.scale.height - (this.y + this.height);
+        if (dropdownHeight > maxDropdownHeight) {
+            this.optionsContainer.setMask(new Phaser.Display.Masks.GeometryMask(this.scene, new Phaser.GameObjects.Rectangle(this.scene, 0, 0, this.width - 20, maxDropdownHeight)));
+        }
+
+        this.optionsVisible = true;
+    }
+
+    hideDropdownOptions() {
+        this.optionsContainer.removeAll(true); // Clear options when hiding the dropdown
+        this.optionsVisible = false;
+    }
+
+    setOptions(options) {
+        this.options = options;
+        this.selectedOptionIndex = -1;
+        this.message = this.initialMessage;
+        this.enabled = false;
+        this.hideDropdownOptions(); // Ensure dropdown is hidden initially
+    }
+
+    updateText() {
+        this.dropdownText.setText(`Select: ${this.message}`);
+    }
+
     handleSubmit() {
-        const message = this.message.trim();
-        if (message) {
-            this.chatController.addMessage({ sender: this.userName, message });
-            this.message = '';  // Reset the message after sending
-            this.updateText();
+        if (this.selectedOptionIndex >= 0) {
+            const selectedOption = this.options[this.selectedOptionIndex];
+            this.chatController.addMessage({ sender: this.userName, message: selectedOption });
         }
     }
 }
 
-
 export class ChatBox extends ChatItem {
-    constructor(scene, x, y, width, height) {
+    constructor(scene, x, y, width, height, ChatInputType) {
         super(scene, x, y, width, height)
 
         // Create a container to hold all elements (background, text, buttons)
         this.chatController = new ChatController()
         this.chatDisplay = new ChatDisplay(this.scene, x, y, width, height / 2, this.chatController)
-        this.chatInput = new ChatInput(this.scene, x, y + height / 2, width, height / 2, this.chatController)
+        this.chatInput = new ChatInputType(this.scene, x, y + height / 2, width, height / 2, this.chatController)
 
         // Background rectangle for the chat box, centered inside the container
         this.background = scene.add.rectangle(0, 0, width, height, 0x000000)
