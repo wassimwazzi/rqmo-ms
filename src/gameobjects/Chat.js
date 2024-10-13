@@ -1,3 +1,13 @@
+export class ChatListener {
+    constructor(onNewMessage) {
+        this.onNewMessage = onNewMessage
+    }
+
+    newMessage(message) {
+        this.onNewMessage(message)
+    }
+}
+
 class ChatController {
     constructor() {
         this.messages = []
@@ -394,14 +404,8 @@ export class ChatDropdownInput extends ChatInput {
     }
 
     updateText() {
-        this.dropdownText.setText(`Select: ${this.message}`);
-    }
-
-    handleSubmit() {
-        if (this.selectedOptionIndex >= 0) {
-            const selectedOption = this.options[this.selectedOptionIndex];
-            this.chatController.addMessage({ sender: this.userName, message: selectedOption });
-        }
+        const displayText = this.message ? this.message : this.initialMessage
+        this.dropdownText.setText(`Select: ${displayText}`);
     }
 }
 

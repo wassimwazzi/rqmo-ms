@@ -10,16 +10,17 @@ export default class SpecialistScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image('background', background);
+        this.load.image('SpeacialistBackground', background);
         this.load.spritesheet('dude', dude, { frameWidth: 32, frameHeight: 48 });
         this.load.spritesheet('doctor', doctor, { frameWidth: 32, frameHeight: 48 });
         this.canvas = this.sys.game.canvas;
         this.width = this.canvas.width
         this.height = this.canvas.height
+        this.chatIndex = 1
     }
 
     create() {
-        this.add.image(this.width / 2, this.height / 2, 'background').setDisplaySize(this.width, this.height);
+        this.add.image(this.width / 2, this.height / 2, 'SpeacialistBackground').setDisplaySize(this.width, this.height);
         this.createChatBox()
     }
 
@@ -28,10 +29,17 @@ export default class SpecialistScene extends Phaser.Scene {
         let rectMargin = 0.1 * this.width;
         // Align it to bottom of screen
         this.chatBox = new ChatBox(this, rectMargin, this.height - rectHeight, this.width - 2 * rectMargin, rectHeight, ChatDropdownInput);
-        this.chatBox.chatInput.setOptions(['Option 1', 'Option 2'])
-
+        this.chatBox.chatInput.setOptions(['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5']);
         this.chatBox.chatController.addMessage({ sender: 'Doctor', message: 'What are your symptoms?' });
+        this.chatBox.chatController.addListener(this);
 
+    }
+
+    newMessage(message) {
+        this.chatIndex += 1
+        if (message.sender === 'Player') {
+            this.chatBox.chatInput.setOptions([`Option ${this.chatIndex}.1`, `Option ${this.chatIndex}.2`, `Option ${this.chatIndex}.3`, `Option ${this.chatIndex}.4`, `Option ${this.chatIndex}.5`])
+        }
     }
 
     handleSubmit() {
