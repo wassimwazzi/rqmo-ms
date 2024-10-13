@@ -187,7 +187,7 @@ export class ChatInput extends ChatItem {
         // method to update the displayed text in input
         // called after submit
         throw { name: "NotImplementedError", message: "updateText must be implemented by subclass" };
-        
+
     }
 
     toggleEnabled() {
@@ -255,6 +255,10 @@ export class ChatDropdownInput extends ChatInput {
         this.selectedOptionIndex = -1;
         this.optionsVisible = false; // Track whether dropdown is open
         this.initialMessage = 'Select an option';
+        this.visibleOptions = 3; // Number of options to show at a time
+        this.currentStartIndex = 0; // Track the starting index for visible options
+        this.scrollEventCounter = 0; // Count scroll events
+        this.scrollTriggerCount = 5; // Number of scroll events needed to trigger scroll. Increase to slow down scroll speed
 
         // Dropdown options and container
         this.dropdownText = scene.add.text(10, height / 2, `Select: ${this.initialMessage}`, {
@@ -264,14 +268,45 @@ export class ChatDropdownInput extends ChatInput {
         }).setOrigin(0, 0.5).setInteractive();
         this.container.add(this.dropdownText);
 
-        this.optionsContainer = scene.add.container(10, 0);
+        this.optionsContainer = scene.add.container(0, 0);
         this.container.add(this.optionsContainer);
 
-        this.scene.input.on('pointerdown', () => this.toggleDropdown());
+        this.scene.input.on('pointerdown', (pointer) => {
+            if (this.background.getBounds().contains(pointer.x, pointer.y)) {
+                this.toggleDropdown()
+            } else {
+                this.hideDropdownOptions();
+            }
+        });
+
+        // Add mouse wheel scroll support
+        this.scene.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
+            if (this.optionsVisible) this.handleScroll(deltaY);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key == 'keydown-DOWN' && e.target == document.body && this.inputFieldInFocus) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            e.preventDefault()
+            if ((e.key == 'ArrowUp' || e.key == 'ArrowDown') && e.target == document.body && this.inputFieldInFocus) {
+                e.preventDefault();
+            } else {
+                return
+            }
+            if (e.key == 'ArrowUp' && this.optionsVisible) {
+                this.scrollUp();
+            }
+            if (e.key == 'ArrowDown' && this.optionsVisible) {
+                this.scrollDown();
+            }
+        });
     }
 
     toggleDropdown() {
-        console.log('toggleDropdown')
         if (this.optionsVisible) {
             this.hideDropdownOptions();
         } else {
@@ -280,41 +315,10 @@ export class ChatDropdownInput extends ChatInput {
     }
 
     showDropdownOptions() {
-        console.log('showDropdownOptions', this.options)
         if (!this.options || !this.options.length) return;
 
-        // Clear any existing options in case the dropdown is toggled multiple times
-        this.optionsContainer.removeAll(true);
-
-        const optionHeight = 30;  // Set the height for each option
-        this.options.forEach((option, index) => {
-            const optionText = this.scene.add.text(0, index * optionHeight, option, {
-                fontSize: '14px',
-                fill: '#000000',
-                backgroundColor: '#f0f0f0',
-                padding: { x: 5, y: 5 },
-                fixedWidth: this.width - 20 // Ensure the option fits within the dropdown width
-            }).setInteractive();
-
-            // Add click listener for selecting an option
-            optionText.on('pointerdown', () => {
-                this.selectedOptionIndex = index;
-                this.message = this.options[this.selectedOptionIndex];
-                this.updateText();
-                this.hideDropdownOptions();
-                this.enabled = true; // Enable input after selection
-            });
-
-            this.optionsContainer.add(optionText);
-        });
-
-        // Ensure the dropdown does not exceed the screen height
-        const dropdownHeight = optionHeight * this.options.length;
-        const maxDropdownHeight = this.scene.scale.height - (this.y + this.height);
-        if (dropdownHeight > maxDropdownHeight) {
-            this.optionsContainer.setMask(new Phaser.Display.Masks.GeometryMask(this.scene, new Phaser.GameObjects.Rectangle(this.scene, 0, 0, this.width - 20, maxDropdownHeight)));
-        }
-
+        this.optionsContainer.removeAll(true); // Clear any existing options
+        this.updateVisibleOptions();
         this.optionsVisible = true;
     }
 
@@ -323,11 +327,69 @@ export class ChatDropdownInput extends ChatInput {
         this.optionsVisible = false;
     }
 
+    handleScroll(deltaY) {
+        // Increment the scroll event counter
+        this.scrollEventCounter++;
+
+        // Check if the counter has reached the trigger count
+        if (this.scrollEventCounter >= this.scrollTriggerCount) {
+            if (deltaY > 0) {
+                this.scrollDown(); // Scroll down
+            } else {
+                this.scrollUp(); // Scroll up
+            }
+            this.scrollEventCounter = 0; // Reset the counter after scrolling
+        }
+    }
+
+    scrollDown() {
+        if (this.currentStartIndex + this.visibleOptions < this.options.length) {
+            this.currentStartIndex++; // Scroll down
+            this.updateVisibleOptions(); // Update the visible options
+        }
+    }
+
+    scrollUp() {
+        if (this.currentStartIndex > 0) {
+            this.currentStartIndex--; // Scroll up
+            this.updateVisibleOptions(); // Update the visible options
+        }
+    }
+
+    updateVisibleOptions() {
+        this.optionsContainer.removeAll(true); // Clear any existing options
+
+        for (let i = 0; i < this.visibleOptions; i++) {
+            const optionIndex = this.currentStartIndex + i;
+            if (optionIndex < this.options.length) {
+                const optionText = this.scene.add.text(0, i * 30, this.options[optionIndex], {
+                    fontSize: '14px',
+                    fill: '#000000',
+                    backgroundColor: '#f0f0f0',
+                    padding: { x: 5, y: 5 },
+                    fixedWidth: this.width - 20
+                }).setInteractive();
+
+                optionText.on('pointerdown', () => {
+                    this.selectedOptionIndex = optionIndex;
+                    this.message = this.options[this.selectedOptionIndex];
+                    this.updateText();
+                    this.hideDropdownOptions();
+                    this.enabled = true; // Enable input after selection
+                });
+
+                this.optionsContainer.add(optionText);
+            }
+        }
+    }
+
     setOptions(options) {
         this.options = options;
         this.selectedOptionIndex = -1;
         this.message = this.initialMessage;
         this.enabled = false;
+        this.currentStartIndex = 0; // Reset to the first option
+        this.scrollEventCounter = 0; // Reset scroll event counter
         this.hideDropdownOptions(); // Ensure dropdown is hidden initially
     }
 
