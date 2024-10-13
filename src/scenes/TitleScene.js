@@ -13,25 +13,25 @@ class TitleScene extends Phaser.Scene {
 
   create() {
     // Add a background
-    const bg = this.add.image(300, 150, "background"); // Position at the center of the screen
-    bg.setScale(0.3);
+    const bg = this.add.image(700, 350, "background"); // Position at the center of the screen
+    bg.setScale(0.7);
 
     // Replace the button image with a text button
     const newGameButtonBox = this.add.graphics();
     newGameButtonBox.fillStyle(808080, 0.9); // Blue color with 80% opacity
-    newGameButtonBox.fillRect(150, 60, 300, 80);
+    newGameButtonBox.fillRect(530, 140, 440, 120);
 
     // Add the title text
     this.titleText = this.add
-      .text(300, 100, "RQMO Game", {
-        fontSize: "48px",
+      .text(750, 200, "RQMO Game", {
+        fontSize: "72px",
         fill: "#ffffff",
       })
       .setOrigin(0.5); // Center the text
 
     const newGameButton = this.add
-      .text(300, 200, "New Game", {
-        fontSize: "32px",
+      .text(750, 350, "New Game", {
+        fontSize: "48px",
         fill: "#ffffff",
       })
       .setOrigin(0.5)
