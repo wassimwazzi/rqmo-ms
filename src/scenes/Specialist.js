@@ -3,6 +3,7 @@ import background from '../assets/background.png';
 import dude from '../assets/dude.png';
 import Phaser from 'phaser';
 import doctor from '../assets/doctor.png';
+import { testGame } from '../gameobjects/Game';
 
 export default class SpecialistScene extends Phaser.Scene {
     constructor() {
@@ -17,11 +18,13 @@ export default class SpecialistScene extends Phaser.Scene {
         this.width = this.canvas.width
         this.height = this.canvas.height
         this.chatIndex = 1
+        this.game = testGame
     }
 
     create() {
         this.add.image(this.width / 2, this.height / 2, 'SpecialistBackground').setDisplaySize(this.width, this.height);
         this.createChatBox()
+        this.nextOptions()
     }
 
     createChatBox() {
@@ -29,26 +32,25 @@ export default class SpecialistScene extends Phaser.Scene {
         let rectMargin = 0.1 * this.width;
         // Align it to bottom of screen
         this.chatBox = new ChatBox(this, rectMargin, this.height - rectHeight, this.width - 2 * rectMargin, rectHeight, ChatDropdownInput);
-        this.chatBox.chatInput.setOptions(['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5']);
-        this.chatBox.chatController.addMessage({ sender: 'Doctor', message: 'What are your symptoms?' });
+        // this.chatBox.chatInput.setOptions(['Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5']);
+        this.chatBox.chatController.addMessage({ sender: 'Doctor', message: this.game.head.prompt });
         this.chatBox.chatController.addListener(this);
+    }
 
+    nextOptions() {
+        const nextOptions = this.game.nextActions().map((action) => action.prompt)
+        this.chatBox.chatInput.setOptions(nextOptions);
     }
 
     newMessage(message) {
-        this.chatIndex += 1
+        // this.chatIndex += 1
         if (message.sender === 'Player') {
-            this.chatBox.chatInput.setOptions([`Option ${this.chatIndex}.1`, `Option ${this.chatIndex}.2`, `Option ${this.chatIndex}.3`, `Option ${this.chatIndex}.4`, `Option ${this.chatIndex}.5`])
-        }
-    }
-
-    handleSubmit() {
-        const symptoms = this.inputField.node.value;
-        if (symptoms) {
-            this.chatText.setText(`Doctor: Thank you for providing your symptoms. You mentioned: ${symptoms}`);
-            this.inputField.node.value = ''; // Clear the input field
-        } else {
-            this.chatText.setText('Doctor: Please enter your symptoms.');
+            console.log('Got message', message, 'next: ', this.game.nextActions())
+            const action = this.game.nextActions().find((ac) => ac.promp === message.nessage)
+            this.game.performAction(action.actionId)
+            this.chatBox.chatController.addMessage({ sender: 'Doctor', message: this.game.head.prompt });
+            this.nextOptions()
+            // this.chatBox.chatInput.setOptions([`Option ${this.chatIndex}.1`, `Option ${this.chatIndex}.2`, `Option ${this.chatIndex}.3`, `Option ${this.chatIndex}.4`, `Option ${this.chatIndex}.5`])
         }
     }
 
