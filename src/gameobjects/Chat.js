@@ -1,3 +1,13 @@
+export class ChatListener {
+    constructor(onNewMessage) {
+        this.onNewMessage = onNewMessage
+    }
+
+    newMessage(message) {
+        this.onNewMessage(message)
+    }
+}
+
 class ChatController {
     constructor() {
         this.messages = []
@@ -131,15 +141,14 @@ class ChatDisplay extends ChatItem {
     }
 }
 
-class ChatInput extends ChatItem {
-    constructor(scene, x, y, width, height, chatController, userName = 'Player') {
+export class ChatInput extends ChatItem {
+    constructor(scene, x, y, width, height, chatController, userName = 'Player', enabled = true) {
         super(scene, x, y, width, height);
         this.chatController = chatController;
         this.userName = userName;
-        this.initialMessage = 'Enter your message...';
         this.message = '';
-        this.inputFieldInFocus = false;
-        this.caretVisible = true;
+        this.inputFieldInFocus = enabled;
+        this.enabled = enabled
 
         // Set background color for the input area
         this.background.setFillStyle(0xffffff).setInteractive();
@@ -154,8 +163,6 @@ class ChatInput extends ChatItem {
         }).setOrigin(0.5, 0.5).setInteractive();
         this.container.add(this.submitButton);
 
-        this.submitButton.on('pointerdown', () => this.handleSubmit());
-
         // Set field focus if clicked inside box
         this.scene.input.on('pointerdown', (pointer) => {
             this.inputFieldInFocus = this.background.getBounds().contains(pointer.x, pointer.y);
@@ -169,7 +176,55 @@ class ChatInput extends ChatItem {
             }
         });
 
+        this.addSubmitListeners();
+    }
 
+    addSubmitListeners() {
+        this.submitButton.on('pointerdown', () => this.handleSubmit());
+        this.scene.input.keyboard.on('keydown', (event) => {
+            if (event.key === 'Enter') {
+                this.handleSubmit();
+            }
+        })
+    }
+
+    createInputField() {
+        // method to create the input field
+        throw { name: "NotImplementedError", message: "createInputField must be implemented by subclass" };
+    }
+
+    updateText() {
+        // method to update the displayed text in input
+        // called after submit
+        throw { name: "NotImplementedError", message: "updateText must be implemented by subclass" };
+
+    }
+
+    toggleEnabled() {
+        this.enabled = !this.enabled
+    }
+
+    isEnabled() {
+        return this.enabled
+    }
+
+    // Handle submit button click
+    handleSubmit() {
+        if (!this.enabled) return;
+        const message = this.message.trim();
+        if (message) {
+            this.chatController.addMessage({ sender: this.userName, message });
+            this.message = '';  // Reset the message after sending
+            this.updateText();
+        }
+    }
+}
+
+export class ChattextInput extends ChatInput {
+    constructor(scene, x, y, width, height, chatController, userName = 'Player', enabled = true) {
+        super(scene, x, y, width, height, chatController, userName, enabled);
+        this.initialMessage = 'Enter your message...';
+        this.caretVisible = true;
         this.createInputField();
     }
 
@@ -186,9 +241,7 @@ class ChatInput extends ChatItem {
         this.scene.input.keyboard.on('keydown', (event) => {
             if (!this.inputFieldInFocus) return;
 
-            if (event.key === 'Enter') {
-                this.handleSubmit();
-            } else if (event.key === 'Backspace') {
+            if (event.key === 'Backspace') {
                 this.message = this.message.substring(0, this.message.length - 1);
                 this.updateText();
             } else if (event.key.length === 1) {  // Only handle single character keys
@@ -196,26 +249,7 @@ class ChatInput extends ChatItem {
                 this.updateText();
             }
         });
-        // this.createCaretBlinking();
     }
-
-    // NOTE: Turn this off when scene is changed?
-    // createCaretBlinking() {
-    //     this.caretVisible = this.inputFieldInFocus;
-    //     this.caretBlink = this.scene.time.addEvent({
-    //         delay: 500,  // Blink every 500ms
-    //         callback: () => {
-    //             if (this.inputFieldInFocus) {
-    //                 this.caretVisible = !this.caretVisible;
-    //                 this.updateText();
-    //             } else {
-    //                 this.caretVisible = false;
-    //                 this.updateText();
-    //             }
-    //         },
-    //         loop: true,
-    //     });
-    // }
 
     // Method to update the text and caret visibility
     updateText() {
@@ -223,27 +257,166 @@ class ChatInput extends ChatItem {
         // displayText = this.caretVisible ? displayText + '|' : displayText
         this.inputText.setText(displayText);
     }
+}
 
-    // Handle submit button click
-    handleSubmit() {
-        const message = this.message.trim();
-        if (message) {
-            this.chatController.addMessage({ sender: this.userName, message });
-            this.message = '';  // Reset the message after sending
-            this.updateText();
+export class ChatDropdownInput extends ChatInput {
+    constructor(scene, x, y, width, height, chatController, userName = 'Player', enabled = false) {
+        super(scene, x, y, width, height, chatController, userName, enabled);
+        this.selectedOptionIndex = -1;
+        this.optionsVisible = false; // Track whether dropdown is open
+        this.initialMessage = 'Click here to select an option';
+        this.visibleOptions = 3; // Number of options to show at a time
+        this.currentStartIndex = 0; // Track the starting index for visible options
+        this.scrollEventCounter = 0; // Count scroll events
+        this.scrollTriggerCount = 5; // Number of scroll events needed to trigger scroll. Increase to slow down scroll speed
+
+        // Dropdown options and container
+        this.dropdownText = scene.add.text(10, height / 2, `Select: ${this.initialMessage}`, {
+            fontSize: '16px',
+            fill: '#000000',
+            wordWrap: { width: width - 20 }
+        }).setOrigin(0, 0.5).setInteractive();
+        this.container.add(this.dropdownText);
+
+        this.optionsContainer = scene.add.container(0, 0);
+        this.container.add(this.optionsContainer);
+
+        this.scene.input.on('pointerdown', (pointer) => {
+            if (this.background.getBounds().contains(pointer.x, pointer.y)) {
+                this.toggleDropdown()
+            } else {
+                this.hideDropdownOptions();
+            }
+        });
+
+        // Add mouse wheel scroll support
+        this.scene.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
+            if (this.optionsVisible) this.handleScroll(deltaY);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key == 'keydown-DOWN' && e.target == document.body && this.inputFieldInFocus) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            e.preventDefault()
+            if ((e.key == 'ArrowUp' || e.key == 'ArrowDown') && e.target == document.body && this.inputFieldInFocus) {
+                e.preventDefault();
+            } else {
+                return
+            }
+            if (e.key == 'ArrowUp' && this.optionsVisible) {
+                this.scrollUp();
+            }
+            if (e.key == 'ArrowDown' && this.optionsVisible) {
+                this.scrollDown();
+            }
+        });
+    }
+
+    toggleDropdown() {
+        if (this.optionsVisible) {
+            this.hideDropdownOptions();
+        } else {
+            this.showDropdownOptions();
         }
+    }
+
+    showDropdownOptions() {
+        if (!this.options || !this.options.length) return;
+
+        this.optionsContainer.removeAll(true); // Clear any existing options
+        this.updateVisibleOptions();
+        this.optionsVisible = true;
+    }
+
+    hideDropdownOptions() {
+        this.optionsContainer.removeAll(true); // Clear options when hiding the dropdown
+        this.optionsVisible = false;
+    }
+
+    handleScroll(deltaY) {
+        // Increment the scroll event counter
+        this.scrollEventCounter++;
+
+        // Check if the counter has reached the trigger count
+        if (this.scrollEventCounter >= this.scrollTriggerCount) {
+            if (deltaY > 0) {
+                this.scrollDown(); // Scroll down
+            } else {
+                this.scrollUp(); // Scroll up
+            }
+            this.scrollEventCounter = 0; // Reset the counter after scrolling
+        }
+    }
+
+    scrollDown() {
+        if (this.currentStartIndex + this.visibleOptions < this.options.length) {
+            this.currentStartIndex++; // Scroll down
+            this.updateVisibleOptions(); // Update the visible options
+        }
+    }
+
+    scrollUp() {
+        if (this.currentStartIndex > 0) {
+            this.currentStartIndex--; // Scroll up
+            this.updateVisibleOptions(); // Update the visible options
+        }
+    }
+
+    updateVisibleOptions() {
+        this.optionsContainer.removeAll(true); // Clear any existing options
+
+        for (let i = 0; i < this.visibleOptions; i++) {
+            const optionIndex = this.currentStartIndex + i;
+            if (optionIndex < this.options.length) {
+                const optionText = this.scene.add.text(0, i * 30, this.options[optionIndex], {
+                    fontSize: '14px',
+                    fill: '#000000',
+                    backgroundColor: '#f0f0f0',
+                    padding: { x: 5, y: 5 },
+                    fixedWidth: this.width - 20
+                }).setInteractive();
+
+                optionText.on('pointerdown', () => {
+                    this.selectedOptionIndex = optionIndex;
+                    this.message = this.options[this.selectedOptionIndex];
+                    this.updateText();
+                    this.hideDropdownOptions();
+                    this.enabled = true; // Enable input after selection
+                });
+
+                this.optionsContainer.add(optionText);
+            }
+        }
+    }
+
+    setOptions(options) {
+        this.options = options;
+        this.selectedOptionIndex = -1;
+        this.message = this.initialMessage;
+        this.enabled = false;
+        this.currentStartIndex = 0; // Reset to the first option
+        this.scrollEventCounter = 0; // Reset scroll event counter
+        this.hideDropdownOptions(); // Ensure dropdown is hidden initially
+    }
+
+    updateText() {
+        const displayText = this.message ? this.message : this.initialMessage
+        this.dropdownText.setText(`Select: ${displayText}`);
     }
 }
 
-
 export class ChatBox extends ChatItem {
-    constructor(scene, x, y, width, height) {
+    constructor(scene, x, y, width, height, ChatInputType) {
         super(scene, x, y, width, height)
 
         // Create a container to hold all elements (background, text, buttons)
         this.chatController = new ChatController()
         this.chatDisplay = new ChatDisplay(this.scene, x, y, width, height / 2, this.chatController)
-        this.chatInput = new ChatInput(this.scene, x, y + height / 2, width, height / 2, this.chatController)
+        this.chatInput = new ChatInputType(this.scene, x, y + height / 2, width, height / 2, this.chatController)
 
         // Background rectangle for the chat box, centered inside the container
         this.background = scene.add.rectangle(0, 0, width, height, 0x000000)
