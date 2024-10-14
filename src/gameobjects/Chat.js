@@ -264,7 +264,7 @@ export class ChatDropdownInput extends ChatInput {
         super(scene, x, y, width, height, chatController, userName, enabled);
         this.selectedOptionIndex = -1;
         this.optionsVisible = false; // Track whether dropdown is open
-        this.initialMessage = 'Select an option';
+        this.initialMessage = 'Click here to select an option';
         this.visibleOptions = 3; // Number of options to show at a time
         this.currentStartIndex = 0; // Track the starting index for visible options
         this.scrollEventCounter = 0; // Count scroll events
