@@ -47,22 +47,23 @@ class ChatItem {
 
 class ChatDisplay extends ChatItem {
     constructor(scene, x, y, width, height, chatController) {
-        super(scene, x, y, width, height)
-        this.chatController = chatController
-        this.chatController.addListener(this)
-        this.currentMessageIndex = -1
+        super(scene, x, y, width, height);
+        this.chatController = chatController;
+        this.chatController.addListener(this);
+        this.currentMessageIndex = -1;
+        this.typingTimer = undefined;  // Ensure the typingTimer is initialized
 
-        this.background.setFillStyle(0x000000, 0.5)
+        this.background.setFillStyle(0x000000, 0.5);
         this.textObject = scene.add.text(width / 2, 10, '', {
             fontSize: '14px',
             fill: '#ffffff',
             wordWrap: { width: width - 20 }
         })
-            .setOrigin(0.5, 0)
-            .setInteractive()
-        this.container.add(this.textObject)
+        .setOrigin(0.5, 0)
+        .setInteractive();
+        this.container.add(this.textObject);
 
-        this.createScrollButtons()
+        this.createScrollButtons();
     }
 
     setButtonVisibilities() {
@@ -81,37 +82,46 @@ class ChatDisplay extends ChatItem {
     }
 
     showMessage() {
-        const CHARACTERS_PER_SECOND = 30
-        const { sender, message } = this.chatController.getMessage(this.currentMessageIndex)
-        let displayedMessage = `[${sender}]: ${message}`
+        const CHARACTERS_PER_SECOND = 30;
+        const { sender, message } = this.chatController.getMessage(this.currentMessageIndex);
+        let displayedMessage = `[${sender}]: ${message}`;
         let index = 0;
+
+        // Ensure the previous typing timer is destroyed before creating a new one
+        if (this.typingTimer) {
+            this.typingTimer.remove(false);  // Safely stop the previous timer if it exists
+        }
+
         this.typingTimer = this.scene.time.addEvent({
             delay: 1000 / CHARACTERS_PER_SECOND,
             callback: () => {
-                this.textObject.setText(displayedMessage.substring(0, index + 1));
-                index++;
+                if (this.textObject) {  // Ensure the textObject exists
+                    this.textObject.setText(displayedMessage.substring(0, index + 1));
+                    index++;
+                }
 
                 // If all characters are displayed, stop the timer
                 if (index === displayedMessage.length) {
-                    this.typingTimer.destroy();
-                    this.typingTimer = undefined
+                    if (this.typingTimer) {
+                        this.typingTimer.remove();  // Safely remove the timer
+                        this.typingTimer = undefined;
+                    }
                 }
             },
             loop: true,
         });
     }
 
-    // scroll Up/Down should be guarded by setButtonVisibilities, which will disable the buttons if out of range
     scrollUp() {
-        this.currentMessageIndex -= 1
-        this.showMessage()
-        this.setButtonVisibilities()
+        this.currentMessageIndex -= 1;
+        this.showMessage();
+        this.setButtonVisibilities();
     }
 
     scrollDown() {
-        this.currentMessageIndex += 1
-        this.showMessage()
-        this.setButtonVisibilities()
+        this.currentMessageIndex += 1;
+        this.showMessage();
+        this.setButtonVisibilities();
     }
 
     createScrollButtons() {
@@ -135,11 +145,12 @@ class ChatDisplay extends ChatItem {
     }
 
     newMessage(message) {
-        this.currentMessageIndex += 1
-        this.showMessage()
-        this.setButtonVisibilities()
+        this.currentMessageIndex += 1;
+        this.showMessage();
+        this.setButtonVisibilities();
     }
 }
+
 
 export class ChatInput extends ChatItem {
     constructor(scene, x, y, width, height, chatController, userName = 'Player', enabled = true) {
