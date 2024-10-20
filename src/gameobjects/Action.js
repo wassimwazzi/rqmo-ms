@@ -7,6 +7,12 @@ export class Outcome {
         this.diagnosticScore = diagnosticScore
         this.points = points
     }
+
+    apply(inventory) {
+        inventory.stressScore += this.stressScore
+        inventory.diagnosticScore += this.stressScore
+        inventory.points += this.points
+    }
 }
 
 export class Action {
@@ -25,8 +31,6 @@ export class Action {
     }
 
     apply(inventory) {
-        inventory.stressScore += this.outcome.stressScore
-        inventory.diagnosticScore += this.outcome.stressScore
-        inventory.points += this.outcome.points
+        this.outcome.apply(inventory)
     }
 }

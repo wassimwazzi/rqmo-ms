@@ -1,3 +1,88 @@
+import { Node, Action } from "../gameobjects/Game";
+
+// TODO: Merge this into data.js and delete this file
+
+export const GameData = {
+  nodes: {
+    '0': new Node({
+      prompt: "I’ve reviewed your results from the clinic. It’s still unclear, but let’s discuss your symptoms.",
+      scene: 'SpecialistScene'
+    }),
+    '1_1': new Node({
+      prompt: "We could do some blood work, or schedule an MRI. What do you think?",
+      scene: 'SpecialistScene'
+    }),
+    '2_1': new Node({
+      prompt: "Have you noticed any specific triggers that make your symptoms worse?",
+      scene: 'SpecialistScene'
+    }),
+    '3_1': new Node({
+      prompt: "We’ve run some tests, but they’ve come back inconclusive. What would you like to do next?",
+      scene: 'SpecialistScene'
+    }),
+  },
+  edges:
+    [
+      {
+        from: '0',
+        to: '1_1',
+        action: [
+          new Action({
+            message: "I think it might be an autoimmune disease. Could we investigate that?",
+            stressScore: 5,
+            diagnosticScore: 15
+          }),
+          new Action({
+            message: "I’m scared. I don’t understand what’s happening.",
+            stressScore: 10,
+            diagnosticScore: 10
+          }),
+          new Action({
+            message: "Just give me something to stop the pain!",
+            stressScore: 20,
+            diagnosticScore: 5
+          })
+        ]
+      },
+      {
+        from: '1_1',
+        to: '2_1',
+        action: new Action({
+          message: "I think it might be an autoimmune disease. Could we investigate that?",
+          stressScore: 5,
+          diagnosticScore: 15
+        })
+      },
+      {
+        from: '0',
+        to: '1_1',
+        action: new Action({
+          message: "I think it might be an autoimmune disease. Could we investigate that?",
+          stressScore: 5,
+          diagnosticScore: 15
+        })
+      },
+      {
+        from: '0',
+        to: '1_1',
+        action: new Action({
+          message: "I think it might be an autoimmune disease. Could we investigate that?",
+          stressScore: 5,
+          diagnosticScore: 15
+        })
+      },
+      {
+        from: '0',
+        to: '1_1',
+        action: new Action({
+          message: "I think it might be an autoimmune disease. Could we investigate that?",
+          stressScore: 5,
+          diagnosticScore: 15
+        })
+      },
+    ]
+}
+
 export const SceneData = {
   scenes: [
     {

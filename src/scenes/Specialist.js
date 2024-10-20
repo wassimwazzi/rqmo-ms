@@ -3,12 +3,12 @@ import background from '../assets/background.png';
 import dude from '../assets/dude.png';
 import Phaser from 'phaser';
 import doctor from '../assets/doctor.png';
+import { GameTree } from '../gameobjects/Game';
 import { SceneData } from './SceneData';
 
 export default class SpecialistScene extends Phaser.Scene {
     constructor() {
         super({ key: 'SpecialistScene' });
-        this.currentDialogueIndex = 0;  // Track the current dialogue
         this.isPlayerTurn = false;  // Start with specialist's turn (false = specialist, true = player)
         this.isPlayerInput = false;  // Flag to indicate if it's the player's input
     }
@@ -21,6 +21,7 @@ export default class SpecialistScene extends Phaser.Scene {
 
     create() {
         // Access the scene data directly from the JavaScript object
+        this.gameTree = GameTree.getInstance()
         this.currentScene = SceneData.scenes.find(scene => scene.sceneName === 'Specialist Office');
 
         if (!this.currentScene) {
@@ -60,65 +61,42 @@ export default class SpecialistScene extends Phaser.Scene {
     }
 
     showSpecialistMessage() {
-        const currentDialogue = this.currentScene.dialogueTree[this.currentDialogueIndex];
-        if (currentDialogue && currentDialogue.specialist) {
-            const specialistMessage = currentDialogue.specialist;
-            console.log('Showing specialist message:', specialistMessage);
+        const prompt = this.gameTree.getHead().getPrompt()
 
-            // Temporarily set isPlayerInput to false to avoid triggering newMessage
-            this.isPlayerInput = false;
+        // Temporarily set isPlayerInput to false to avoid triggering newMessage
+        this.isPlayerInput = false;
 
-            // Add the specialist's message to the chat without triggering input event handling
-            this.chatBox.chatController.addMessage({ sender: 'Specialist', message: specialistMessage });
+        // Add the specialist's message to the chat without triggering input event handling
+        this.chatBox.chatController.addMessage({ sender: 'Specialist', message: prompt });
 
-            // After the specialist's message, switch to player turn and show options
-            this.time.delayedCall(500, () => {
-                this.isPlayerTurn = true;
-                this.isPlayerInput = true;  // Re-enable player input
-                this.showPlayerOptions();  // Show player options after the specialist finishes
-            });
-        } else {
-            console.error('No specialist message available at index:', this.currentDialogueIndex);
-        }
+        // After the specialist's message, switch to player turn and show options
+        this.isPlayerTurn = true;
+        this.isPlayerInput = true;  // Re-enable player input
+        this.showPlayerOptions();  // Show player options after the specialist finishes
     }
 
     showPlayerOptions() {
-        const currentDialogue = this.currentScene.dialogueTree[this.currentDialogueIndex];
-        if (currentDialogue && currentDialogue.playerOptions) {
-            const playerOptions = currentDialogue.playerOptions.map(option => option.text);
-            console.log('Showing player options:', playerOptions);
-
-            // Set the player options in the dropdown input
-            this.chatBox.chatInput.setOptions(playerOptions);
-        } else {
-            console.error('No player options available at index:', this.currentDialogueIndex);
-        }
+        this.actions = this.gameTree.getPossibleActions()
+        // Set the player options in the dropdown input
+        this.chatBox.chatInput.setOptions(this.actions.map((action) => action.getMessage()));
     }
 
     newMessage(message) {
         // Ensure we only handle player messages once and isPlayerInput flag is set to true
         if (message.sender === 'Player' && this.isPlayerTurn && this.isPlayerInput) {
-            // Get the current dialogue and selected option
-            const currentDialogue = this.currentScene.dialogueTree[this.currentDialogueIndex];
-            const selectedOption = currentDialogue.playerOptions.find(option => option.text === message.message);
-
-            if (selectedOption) {
-                console.log('Player chose:', selectedOption.text);
+            const selectedAction = this.actions.find((action) => action.getMessage() == message.message)
+            if (selectedAction) {
 
                 // Temporarily set isPlayerInput to false to prevent recursion
                 this.isPlayerInput = false;
-
-                // Add player's message to the chat box without triggering a new message event
-                this.chatBox.chatController.addMessage({ sender: 'Player', message: selectedOption.text });
-
                 // Now it's the specialist's turn to respond
                 this.isPlayerTurn = false;
-                this.currentDialogueIndex += 1;
+                this.gameTree.applyAction(selectedAction)
 
                 // Show the next specialist's message after the player's message
-                this.time.delayedCall(1000, () => {
-                    this.showSpecialistMessage();  // Call showSpecialistMessage after player's choice
-                });
+                this.showSpecialistMessage();  // Call showSpecialistMessage after player's choice
+            } else {
+                console.error('No Selection Action found')
             }
         }
     }
