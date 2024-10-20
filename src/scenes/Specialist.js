@@ -4,7 +4,6 @@ import dude from '../assets/dude.png';
 import Phaser from 'phaser';
 import doctor from '../assets/doctor.png';
 import { GameTree } from '../gameobjects/Game';
-import { SceneData } from './SceneData';
 
 export default class SpecialistScene extends Phaser.Scene {
     constructor() {
@@ -22,13 +21,6 @@ export default class SpecialistScene extends Phaser.Scene {
     create() {
         // Access the scene data directly from the JavaScript object
         this.gameTree = GameTree.getInstance()
-        this.currentScene = SceneData.scenes.find(scene => scene.sceneName === 'Specialist Office');
-
-        if (!this.currentScene) {
-            console.error('Specialist Office scene not found in sceneData.');
-            return;
-        }
-
         // Set up the scene visuals
         this.canvas = this.sys.game.canvas;
         this.width = this.canvas.width;
