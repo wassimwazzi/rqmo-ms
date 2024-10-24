@@ -8,8 +8,6 @@ import { GameTree } from '../gameobjects/Game';
 export default class SpecialistScene extends Phaser.Scene {
     constructor() {
         super({ key: 'SpecialistScene' });
-        this.isPlayerTurn = false;  // Start with specialist's turn (false = specialist, true = player)
-        this.isPlayerInput = false;  // Flag to indicate if it's the player's input
     }
 
     preload() {
@@ -43,27 +41,16 @@ export default class SpecialistScene extends Phaser.Scene {
         this.chatBox = new ChatBox(this, rectMargin, this.height - rectHeight, this.width - 2 * rectMargin, rectHeight, ChatDropdownInput);
 
         // Listen for player input using an arrow function to maintain the `this` context
-        this.chatBox.chatController.addListener({
-            newMessage: (message) => {
-                if (this.isPlayerInput && message.sender === 'Player') {
-                    this.newMessage(message);
-                }
-            }
-        });
+        this.chatBox.chatController.addListener(this);
     }
 
     showSpecialistMessage() {
         const prompt = this.gameTree.getHead().getPrompt()
 
-        // Temporarily set isPlayerInput to false to avoid triggering newMessage
-        this.isPlayerInput = false;
-
         // Add the specialist's message to the chat without triggering input event handling
         this.chatBox.chatController.addMessage({ sender: 'Specialist', message: prompt });
 
         // After the specialist's message, switch to player turn and show options
-        this.isPlayerTurn = true;
-        this.isPlayerInput = true;  // Re-enable player input
         this.showPlayerOptions();  // Show player options after the specialist finishes
     }
 
@@ -74,17 +61,10 @@ export default class SpecialistScene extends Phaser.Scene {
     }
 
     newMessage(message) {
-        // Ensure we only handle player messages once and isPlayerInput flag is set to true
-        if (message.sender === 'Player' && this.isPlayerTurn && this.isPlayerInput) {
+        if (message.sender === 'Player') {
             const selectedAction = this.actions.find((action) => action.getMessage() == message.message)
             if (selectedAction) {
-
-                // Temporarily set isPlayerInput to false to prevent recursion
-                this.isPlayerInput = false;
-                // Now it's the specialist's turn to respond
-                this.isPlayerTurn = false;
                 this.gameTree.applyAction(selectedAction)
-
                 // Show the next specialist's message after the player's message
                 this.showSpecialistMessage();  // Call showSpecialistMessage after player's choice
             } else {
