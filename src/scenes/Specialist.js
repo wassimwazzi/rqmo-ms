@@ -4,6 +4,7 @@ import dude from '../assets/dude.png';
 import Phaser from 'phaser';
 import doctor from '../assets/doctor.png';
 import { GameTree } from '../gameobjects/Game';
+import ScoreDisplay from '../gameobjects/ScoreDisplay';
 
 export default class SpecialistScene extends Phaser.Scene {
     constructor() {
@@ -28,6 +29,9 @@ export default class SpecialistScene extends Phaser.Scene {
 
         // Create the chatbox
         this.createChatBox();
+
+        // Initialize ScoreDisplay
+        this.scoreDisplay = new ScoreDisplay(this, 250, 40);
 
         // Show the first specialist message right when the scene is created
         this.showSpecialistMessage();
@@ -55,8 +59,7 @@ export default class SpecialistScene extends Phaser.Scene {
     }
 
     showPlayerOptions() {
-        this.actions = this.gameTree.getPossibleActions()
-        // Set the player options in the dropdown input
+        this.actions = this.gameTree.getPossibleActions();
         this.chatBox.chatInput.setOptions(this.actions.map((action) => action.getMessage()));
     }
 
@@ -64,9 +67,11 @@ export default class SpecialistScene extends Phaser.Scene {
         if (message.sender === 'Player') {
             const selectedAction = this.actions.find((action) => action.getMessage() == message.message)
             if (selectedAction) {
-                this.gameTree.applyAction(selectedAction)
-                // Show the next specialist's message after the player's message
-                this.showSpecialistMessage();  // Call showSpecialistMessage after player's choice
+                this.gameTree.applyAction(selectedAction);
+
+                this.scoreDisplay.updateScores();
+
+                this.showSpecialistMessage();
             } else {
                 console.error('No Selection Action found')
             }
