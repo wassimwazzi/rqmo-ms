@@ -1,43 +1,134 @@
-import { Action, Outcome } from "./Action";
-import { Inventory } from "./Inventory";
+import Inventory from "./Inventory";
+import { GAME_DATA } from "../data";
 
-export class Game {
-    // Game Graph
-    constructor(initialAction) {
-        this.performedActions = []
-        this.inventory = new Inventory()
-        this.head = initialAction;
+export class Action {
+    message;
+    stressScore;
+    diagnosticScore
+
+    constructor({ message, stressScore, diagnosticScore }) {
+        this.message = message
+        this.stressScore = stressScore
+        this.diagnosticScore = diagnosticScore
     }
 
-    nextActions() {
-        return this.head.nextActions;
+    getMessage() {
+        return this.message;
     }
 
-    performAction(actionId) {
-        const nextActions = this.nextActions()
-        if (!actionId in nextActions) {
-            throw new Error('Invalid action ID(s) provided.');
-        }
-        const nextAction = nextActions.find((action) => action.actionId === actionId)
-        this.performedActions.push(this.head)
-        this.head = nextAction
-        this.head.apply(this.inventory)
+    apply() {
+        const inventory = Inventory.getInstance();
+        inventory.stressScore += this.stressScore;
+        inventory.diagnosticScore += this.diagnosticScore;
     }
 }
 
-const dummyOutcome = new Outcome('Action completed', 10, 20, 30)
-const initialAction = new Action('First Action', dummyOutcome)
-const action2_1 = new Action('Action 2.1', dummyOutcome)
-const action2_2 = new Action('Action 2.2', dummyOutcome)
-const action2_3 = new Action('Action 2.3', dummyOutcome)
-initialAction.addNextAction(action2_1)
-initialAction.addNextAction(action2_2)
-initialAction.addNextAction(action2_3)
-const action3_1 = new Action('Action 3.1', dummyOutcome)
-const action3_2 = new Action('Action 3.2', dummyOutcome)
-const action3_3 = new Action('Action 3.3', dummyOutcome)
-action2_1.addNextAction(action3_1)
-action2_2.addNextAction(action3_2)
-action2_3.addNextAction(action3_3)
+export class Node {
+    static #nodes = {};
 
-export const testGame = new Game(initialAction)
+    constructor({ id, prompt, scene }) {
+        this.id = id
+        this.prompt = prompt
+        this.scene = scene
+    }
+
+    getPrompt() {
+        return this.prompt
+    }
+
+    getScene() {
+        return this.scene
+    }
+
+    static getOrCreate({ id, prompt, scene }) {
+        if (!(id in Node.#nodes)) {
+            Node.#nodes[id] = new Node({ id, prompt, scene })
+        }
+        return Node.#nodes[id];
+    }
+}
+
+export class GameTree {
+    static #instance;
+
+    constructor() {
+        this.visited = []
+        // Node instance
+        this.state = null;
+        // Map: fromNode -> [{action, toNode}]
+        this.edges = {}
+        this.edges2 = {}
+        this.initializeGameTree()
+    }
+
+    initializeGameTree() {
+        if (GameTree.#instance) {
+            throw new Error("GameTree already initialized");
+        }
+        const head = Node.getOrCreate({ id: "0", ...GAME_DATA.nodes["0"] })
+        this.setHead(head)
+        for (const fromNodeId in GAME_DATA.edges) {
+            const fromNodeData = GAME_DATA.nodes[fromNodeId];
+            const fromNode = Node.getOrCreate({ id: fromNodeId, ...fromNodeData });
+            GAME_DATA.edges[fromNodeId].forEach(edge => {
+                // for each to Node
+                const toNodeId = edge.to
+                const toNodeData = GAME_DATA.nodes[toNodeId];
+                const toNode = Node.getOrCreate({ id: toNodeId, ...toNodeData });
+                edge.actions.forEach(action => {
+                    // for each action leading to toNode
+                    action = new Action(action)
+                    this.addEdge({ fromNode, toNode, action })
+                })
+            })
+        }
+    }
+
+    setHead(node) {
+        // call initially to set the start node
+        if (this.state != null) {
+            throw new Error('Only call setHead once on initialization')
+        }
+        this.state = node;
+    }
+
+    getHead() {
+        return this.state;
+    }
+
+    getPossibleActions() {
+        return this.getEdges().map((edge) => edge.action);
+    }
+
+    getEdges() {
+        if (!this.state || !(this.state.id in this.edges)) {
+            return [];
+        }
+        return this.edges[this.state.id]
+    }
+
+    applyAction(action) {
+        const edges = this.getEdges();
+        if (!action in edges.map((edge) => edge.action)) {
+            throw new Error(`Invalid action chosen. Action: ${action}, edges: ${edges}, head: ${this.state}`);
+        }
+        this.visited.push(this.state);
+        this.state = edges.find((edge) => edge.action == action).toNode;
+        action.apply();
+    }
+
+    addEdge({ fromNode, toNode, action }) {
+        if (fromNode.id in this.edges) {
+            this.edges[fromNode.id].push({ action, toNode });
+        } else {
+            this.edges[fromNode.id] = [{ action, toNode }];
+        }
+    }
+
+    static getInstance() {
+        if (!GameTree.#instance) {
+            GameTree.#instance = new GameTree();
+        }
+        return GameTree.#instance;
+    }
+}
