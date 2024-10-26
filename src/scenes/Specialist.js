@@ -5,36 +5,33 @@ import Phaser from 'phaser';
 import doctor from '../assets/doctor.png';
 import { GameTree } from '../gameobjects/Game';
 import ScoreDisplay from '../gameobjects/ScoreDisplay';
+import BaseScene from './BaseScene';
 
-export default class SpecialistScene extends Phaser.Scene {
+export default class SpecialistScene extends BaseScene {
     constructor() {
         super({ key: 'SpecialistScene' });
     }
 
     preload() {
+        super.preload()
         this.load.image('SpecialistBackground', background);
         this.load.spritesheet('dude', dude, { frameWidth: 32, frameHeight: 48 });
         this.load.spritesheet('doctor', doctor, { frameWidth: 32, frameHeight: 48 });
     }
 
     create() {
-        // Access the scene data directly from the JavaScript object
-        this.gameTree = GameTree.getInstance()
-        // Set up the scene visuals
-        this.canvas = this.sys.game.canvas;
-        this.width = this.canvas.width;
-        this.height = this.canvas.height;
+        // Make sure to all super create to set up required objects
+        super.create()
 
         this.add.image(this.width / 2, this.height / 2, 'SpecialistBackground').setDisplaySize(this.width, this.height);
 
         // Create the chatbox
         this.createChatBox();
+        // Set the data
+        this.udpateChatBox();
 
         // Initialize ScoreDisplay
         this.scoreDisplay = new ScoreDisplay(this, 250, 40);
-
-        // Show the first specialist message right when the scene is created
-        this.showSpecialistMessage();
     }
 
     createChatBox() {
@@ -48,37 +45,26 @@ export default class SpecialistScene extends Phaser.Scene {
         this.chatBox.chatController.addListener(this);
     }
 
-    showSpecialistMessage() {
-        const prompt = this.gameTree.getHead().getPrompt()
-
+    udpateSpecialistMessage() {
         // Add the specialist's message to the chat without triggering input event handling
-        this.chatBox.chatController.addMessage({ sender: 'Specialist', message: prompt });
-
-        // After the specialist's message, switch to player turn and show options
-        this.showPlayerOptions();  // Show player options after the specialist finishes
+        this.chatBox.chatController.addMessage({ sender: 'Specialist', message: this.getMessage() });
     }
 
-    showPlayerOptions() {
-        this.actions = this.gameTree.getPossibleActions();
-        this.chatBox.chatInput.setOptions(this.actions.map((action) => action.getMessage()));
+    updatePlayerOptions() {
+        this.chatBox.chatInput.setOptions(this.getActionMessages());
     }
 
-    newMessage(message) {
-        if (message.sender === 'Player') {
-            const selectedAction = this.actions.find((action) => action.getMessage() == message.message)
-            if (selectedAction) {
-                this.gameTree.applyAction(selectedAction);
+    udpateChatBox() {
+        this.udpateSpecialistMessage();
+        this.updatePlayerOptions();
+    }
 
-                this.scoreDisplay.updateScores();
-
-                this.showSpecialistMessage();
-            } else {
-                console.error('No Selection Action found')
-            }
-        }
+    onNewMessage(message) {
+        this.udpateChatBox();
     }
 
     update() {
         // Ensure the game state stays updated
+        super.update()
     }
 }

@@ -58,7 +58,6 @@ export default class Player {
     }
 
     showInventory() {
-        console.log('Inventory:', this.inventory);
         // Optionally display inventory items on screen
         // You can return the inventory items for UI display
         return this.inventory;

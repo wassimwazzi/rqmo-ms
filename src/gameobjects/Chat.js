@@ -276,6 +276,7 @@ export class ChatDropdownInput extends ChatInput {
         this.selectedOptionIndex = -1;
         this.optionsVisible = false; // Track whether dropdown is open
         this.initialMessage = 'Click here to select an option';
+        this.noOptionsMessage = 'There are no available options'
         this.visibleOptions = 3; // Number of options to show at a time
         this.currentStartIndex = 0; // Track the starting index for visible options
         this.scrollEventCounter = 0; // Count scroll events
@@ -336,7 +337,11 @@ export class ChatDropdownInput extends ChatInput {
     }
 
     showDropdownOptions() {
-        if (!this.options || !this.options.length) return;
+        if (!this.options || !this.options.length) {
+            this.message = this.noOptionsMessage;
+            this.updateText();
+            return;
+        }
 
         this.optionsContainer.removeAll(true); // Clear any existing options
         this.updateVisibleOptions();

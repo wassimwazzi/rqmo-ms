@@ -17,6 +17,10 @@ export const GAME_DATA = {
             "prompt": "Could you provide more information?",
             "scene": "SpecialistScene"
         },
+        "1_4": {
+            "prompt": "What brings you here today?",
+            "scene": "DoctorOfficeScene"
+        },
         "2_1": {
             "prompt": "Your blood work came back inconclusive. Let's discuss your next steps.",
             "scene": "TestResultsScene"
@@ -108,6 +112,16 @@ export const GAME_DATA = {
                         "stressScore": 15,
                         "diagnosticScore": 15
                     }
+                ]
+            },
+            {
+                "to": "1_4",
+                "actions": [
+                    {
+                        "message": "I want to see another doctor!",
+                        "stressScore": 50,
+                        "diagnosticScore": 10
+                    },
                 ]
             },
         ],
